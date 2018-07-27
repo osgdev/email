@@ -1,13 +1,16 @@
 package uk.gov.dvla.osg.mailmark.email;
 
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
 
 import javax.mail.*;
+import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import javax.xml.bind.JAXBException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -19,7 +22,7 @@ public class DevNotifyEmail {
     private final DevNotifyEmailData data;
     private String subjectLine, msgText, from;
 
-    private DevNotifyEmail(Builder builder) {
+    private DevNotifyEmail(Builder builder) throws AddressException, JAXBException, IOException {
         this.subjectLine = StringUtils.defaultString(builder.nestedSubjectLine);
         this.msgText = StringUtils.defaultString(builder.nestedMsgText);
         this.from = StringUtils.defaultString(builder.nestedFrom);
@@ -130,8 +133,16 @@ public class DevNotifyEmail {
          * Sends the email with the specified options.
          */
         public void send() {
-            DevNotifyEmail devNotifyEmail = new DevNotifyEmail(this);
-            devNotifyEmail.send();
+            try {
+                DevNotifyEmail devNotifyEmail = new DevNotifyEmail(this);
+                devNotifyEmail.send();
+            } catch (AddressException ex) {
+                LOG.error("Contacts file contains an invalid email address: {}", DevNotifyEmailData.contactsFile);
+            } catch (JAXBException ex) {
+                LOG.error("Unable to load email credentials file [{}]", DevNotifyEmailData.credentialsFile);
+            } catch (IOException ex) {
+                LOG.error("Unable to load email contacts file: {}", DevNotifyEmailData.contactsFile);
+            }
         }
     }
 
