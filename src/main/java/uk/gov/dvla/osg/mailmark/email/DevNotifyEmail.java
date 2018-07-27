@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.Properties;
 
 import javax.mail.*;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
@@ -18,10 +17,18 @@ public class DevNotifyEmail {
     private static final Logger LOG = LogManager.getLogger();
     private final DevNotifyEmailData data;
 
+    /**
+     * Gets the single instance of DevNotifyEmail.
+     *
+     * @return single instance of DevNotifyEmail
+     */
     public static DevNotifyEmail getInstance() {
         return new DevNotifyEmail();
     }
 
+    /**
+     * Instantiates a new dev notify email.
+     */
     private DevNotifyEmail() {
         data = new DevNotifyEmailData();
     }
@@ -39,12 +46,11 @@ public class DevNotifyEmail {
         DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
         String timeStamp = dateFormat.format(new Date());
         String msgBody = timeStamp + " - " + msgText;
-
+        // Email salutation and signature lines
+        String bodyHead = "Hello,\n\n";
+        String bodyFoot = "\n\nPlease investigate ASAP\n\nThanks\n" + from;
+        
         try {
-            // Email salutation and signature lines
-            String bodyHead = "Hello,\n\n";
-            String bodyFoot = "\n\nPlease investigate ASAP\n\nThanks\n" + from;
-
             // Setup mail server
             Properties properties = new Properties();
             properties.put("mail.smtp.host", data.credentials.getHost());
@@ -72,8 +78,6 @@ public class DevNotifyEmail {
             message.setText(bodyHead + msgBody + bodyFoot);
             // Send message
             Transport.send(message);
-        } catch (AddressException ex) {
-            LOG.error("Contacts file contains an invalid email address: {}", data.contactsFile);
         } catch (MessagingException mex) {
             LOG.error("Unable to create email: ", mex.getMessage());
         }

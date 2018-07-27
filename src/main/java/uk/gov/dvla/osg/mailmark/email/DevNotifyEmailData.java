@@ -19,7 +19,6 @@ import org.apache.logging.log4j.Logger;
 
 class DevNotifyEmailData {
     private static final Logger LOG = LogManager.getLogger();
-    //private static final String OS = System.getProperty("os.name").toLowerCase();
     public final String credentialsFile, contactsFile;
     public final Credentials credentials;
     public final Address[] contacts;
