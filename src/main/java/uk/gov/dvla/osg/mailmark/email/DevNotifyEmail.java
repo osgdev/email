@@ -16,20 +16,12 @@ public class DevNotifyEmail {
 
     private static final Logger LOG = LogManager.getLogger();
     private final DevNotifyEmailData data;
+    private String subjectLine, msgText, from;
 
-    /**
-     * Gets the single instance of DevNotifyEmail.
-     *
-     * @return single instance of DevNotifyEmail
-     */
-    public static DevNotifyEmail getInstance() {
-        return new DevNotifyEmail();
-    }
-
-    /**
-     * Instantiates a new dev notify email.
-     */
-    private DevNotifyEmail() {
+    private DevNotifyEmail(Builder builder) {
+        this.subjectLine = builder.nestedSubjectLine;
+        this.msgText = builder.nestedMsgText;
+        this.from = builder.nestedFrom;
         data = new DevNotifyEmailData();
     }
 
@@ -37,11 +29,11 @@ public class DevNotifyEmail {
      * Constructs email from settings in the email Credentials file 
      * and sends to Dev Team members.
      * 
-     * @param subjectLine Subject line of the email
-     * @param msgText Email text body
+     * @param nestedSubjectLine Subject line of the email
+     * @param nestedMsgText Email text body
      * @param recipients comma separated list of email addresses
      */
-    public void send(String subjectLine, String msgText, String from) {
+    public void send() {
 
         DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
         String timeStamp = dateFormat.format(new Date());
@@ -80,6 +72,46 @@ public class DevNotifyEmail {
             Transport.send(message);
         } catch (MessagingException mex) {
             LOG.error("Unable to create email: ", mex.getMessage());
+        }
+    }
+
+    /**
+     * Creates builder to build {@link DevNotifyEmail}.
+     * @return created builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Builder to build {@link DevNotifyEmail}.
+     */
+    public static final class Builder {
+        private String nestedSubjectLine;
+        private String nestedMsgText;
+        private String nestedFrom;
+
+        private Builder() {
+        }
+
+        public Builder subjectLine(String subjectLine) {
+            this.nestedSubjectLine = subjectLine;
+            return this;
+        }
+
+        public Builder msgText(String msgText) {
+            this.nestedMsgText = msgText;
+            return this;
+        }
+
+        public Builder from(String from) {
+            this.nestedFrom = from;
+            return this;
+        }
+
+        public void send() {
+            DevNotifyEmail devNotifyEmail = new DevNotifyEmail(this);
+            devNotifyEmail.send();
         }
     }
 
