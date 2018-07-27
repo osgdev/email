@@ -9,6 +9,7 @@ import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,9 +20,9 @@ public class DevNotifyEmail {
     private String subjectLine, msgText, from;
 
     private DevNotifyEmail(Builder builder) {
-        this.subjectLine = builder.nestedSubjectLine;
-        this.msgText = builder.nestedMsgText;
-        this.from = builder.nestedFrom;
+        this.subjectLine = StringUtils.defaultString(builder.nestedSubjectLine);
+        this.msgText = StringUtils.defaultString(builder.nestedMsgText);
+        this.from = StringUtils.defaultString(builder.nestedFrom);
         data = new DevNotifyEmailData();
     }
 
@@ -33,7 +34,7 @@ public class DevNotifyEmail {
      * @param nestedMsgText Email text body
      * @param recipients comma separated list of email addresses
      */
-    public void send() {
+    private void send() {
 
         DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
         String timeStamp = dateFormat.format(new Date());
@@ -94,21 +95,40 @@ public class DevNotifyEmail {
         private Builder() {
         }
 
+        /**
+         * Email Subject line.
+         * @param subjectLine the subject line
+         * @return the builder
+         */
         public Builder subjectLine(String subjectLine) {
             this.nestedSubjectLine = subjectLine;
             return this;
         }
 
+        /**
+         * Msg text for the email body. This should be a single line of text to 
+         * which the date and time will be pre-pended.
+         * @param msgText the msg text
+         * @return the builder
+         */
         public Builder msgText(String msgText) {
             this.nestedMsgText = msgText;
             return this;
         }
 
+        /**
+         * The application sending the email. This is used in the email signature.
+         * @param from the from line
+         * @return the builder
+         */
         public Builder from(String from) {
             this.nestedFrom = from;
             return this;
         }
 
+        /**
+         * Sends the email with the specified options.
+         */
         public void send() {
             DevNotifyEmail devNotifyEmail = new DevNotifyEmail(this);
             devNotifyEmail.send();
