@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.Properties;
 
 import javax.mail.*;
-import javax.mail.internet.AddressException;
 import javax.mail.internet.MimeMessage;
 import javax.xml.bind.JAXBException;
 
@@ -19,7 +18,7 @@ public class DevNotifyEmail {
     private static final Logger LOG = LogManager.getLogger();
 
     private final DevNotifyEmailData data;
-    private String subjectLine, msgText, from;
+    private final String subjectLine, msgText, from;
 
     /**
      * Instantiates a new dev notify email.
@@ -31,7 +30,7 @@ public class DevNotifyEmail {
         this.subjectLine = StringUtils.defaultString(builder.nestedSubjectLine);
         this.msgText = StringUtils.defaultString(builder.nestedMsgText);
         this.from = StringUtils.defaultString(builder.nestedFrom);
-        this.data = new DevNotifyEmailData();
+        this.data = DevNotifyEmailDataFactory.newInstance();
     }
 
     /**
@@ -42,47 +41,42 @@ public class DevNotifyEmail {
      * @param nestedMsgText Email text body
      * @param recipients comma separated list of email addresses
      */
-    private void send() {
+    private void send() throws MessagingException {
 
         DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
         String timeStamp = dateFormat.format(new Date());
         String msgBody = timeStamp + " - " + msgText;
+        
         // Email salutation and signature lines
         String msgHead = "Hello,\n\n";
         String msgFoot = "\n\nPlease investigate ASAP\n\nThanks\n" + from;
 
-        try {
-            // Setup mail server
-            Properties properties = new Properties();
-            properties.put("mail.smtp.host", data.getHost());
-            properties.put("mail.smtp.port", data.getPort());
-            properties.put("mail.smtp.auth", "false");
-            properties.put("mail.smtp.starttls.ename", "false");
+        // Setup mail server
+        Properties properties = new Properties();
+        properties.put("mail.smtp.host", data.getHost());
+        properties.put("mail.smtp.port", data.getPort());
+        properties.put("mail.smtp.auth", "false");
+        properties.put("mail.smtp.starttls.ename", "false");
 
-            // Setup session with authentication
-            Session emailSession = Session.getInstance(properties, new Authenticator() {
-                @Override
-                protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(data.getUsername(), data.getPassword());
-                }
-            });
-            // Create a default MimeMessage object.
-            MimeMessage message = new MimeMessage(emailSession);
-            // Set From: header field of the header.
-            message.setFrom(data.getFromAddress());
-            // Set To: header field of the header.
-            message.setRecipients(Message.RecipientType.TO, data.getContacts());
-            // Set Subject: header field
-            message.setSubject(subjectLine);
-            // Now set the actual message body
-            message.setText(msgHead + msgBody + msgFoot);
-            // Send message
-            Transport.send(message);
-        } catch (AddressException ex) {
-            LOG.error("Email credentials file contains an invalid email address: {}", DevNotifyEmailData.credentialsFile);
-        } catch (MessagingException mex) {
-            LOG.error("Unable to send email: {}", mex.getMessage());
-        }
+        // Setup session with authentication
+        Session emailSession = Session.getInstance(properties, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(data.getUsername(), data.getPassword());
+            }
+        });
+        // Create a default MimeMessage object.
+        MimeMessage message = new MimeMessage(emailSession);
+        // Set From: header field of the header.
+        message.setFrom(data.getFrom());
+        // Set To: header field of the header.
+        message.setRecipients(Message.RecipientType.TO, data.getContacts());
+        // Set Subject: header field
+        message.setSubject(subjectLine);
+        // Now set the actual message body
+        message.setText(msgHead + msgBody + msgFoot);
+        // Send message
+        Transport.send(message);
     }
 
     /**
@@ -147,7 +141,9 @@ public class DevNotifyEmail {
                 DevNotifyEmail devNotifyEmail = new DevNotifyEmail(this);
                 devNotifyEmail.send();
             } catch (JAXBException ex) {
-                LOG.error("Unable to load email credentials file [{}]", DevNotifyEmailData.credentialsFile);
+                LOG.error("Unable to load email credentials file [{}]", DevNotifyEmailDataFactory.credentialsFile);
+            } catch (MessagingException mex) {
+                LOG.error("Unable to send email: {}", mex.getMessage());
             }
         }
     }
