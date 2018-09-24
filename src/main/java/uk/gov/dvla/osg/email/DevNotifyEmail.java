@@ -1,24 +1,27 @@
 package uk.gov.dvla.osg.email;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
 
 import javax.mail.*;
+import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.xml.bind.JAXBException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class DevNotifyEmail {
 
     private static final Logger LOG = LogManager.getLogger();
-
-    private final DevNotifyEmailData data;
+    private static final String NEWLINE = "\n\n";
+    
     private final String subjectLine, msgText, from;
+    private final String smtpHost, smtpPort, username, password;
+    private final Address[] contacts;
+    private InternetAddress fromAddress;
 
     /**
      * Instantiates a new dev notify email.
@@ -30,7 +33,14 @@ public class DevNotifyEmail {
         this.subjectLine = StringUtils.defaultString(builder.nestedSubjectLine);
         this.msgText = StringUtils.defaultString(builder.nestedMsgText);
         this.from = StringUtils.defaultString(builder.nestedFrom);
-        this.data = DevNotifyEmailDataFactory.newInstance();
+        
+        DevNotifyEmailData data = DevNotifyEmailDataFactory.newInstance();
+        this.smtpHost = data.getHost();
+        this.smtpPort = data.getPort();
+        this.username = data.getUsername();
+        this.password = data.getPassword();
+        this.contacts = data.getContacts();
+        this.fromAddress = data.getFrom();
     }
 
     /**
@@ -42,19 +52,16 @@ public class DevNotifyEmail {
      * @param recipients comma separated list of email addresses
      */
     private void send() throws MessagingException {
-
-        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-        String timeStamp = dateFormat.format(new Date());
-        String msgBody = timeStamp + " - " + msgText;
         
         // Email salutation and signature lines
-        String msgHead = "Hello,\n\n";
-        String msgFoot = "\n\nPlease investigate ASAP\n\nThanks\n" + from;
+        String greeting = "Hello,";
+        String msgBody = DateFormatUtils.format(new Date(), "dd/MM/yyyy HH:mm") + " - " + msgText;
+        String signature = "Please investigate ASAP" + NEWLINE +"Thanks," + NEWLINE + from;
 
         // Setup mail server
         Properties properties = new Properties();
-        properties.put("mail.smtp.host", data.getHost());
-        properties.put("mail.smtp.port", data.getPort());
+        properties.put("mail.smtp.host", smtpHost);
+        properties.put("mail.smtp.port", smtpPort);
         properties.put("mail.smtp.auth", "false");
         properties.put("mail.smtp.starttls.ename", "false");
 
@@ -62,20 +69,16 @@ public class DevNotifyEmail {
         Session emailSession = Session.getInstance(properties, new Authenticator() {
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(data.getUsername(), data.getPassword());
+                return new PasswordAuthentication(username, password);
             }
         });
-        // Create a default MimeMessage object.
+
         MimeMessage message = new MimeMessage(emailSession);
-        // Set From: header field of the header.
-        message.setFrom(data.getFrom());
-        // Set To: header field of the header.
-        message.setRecipients(Message.RecipientType.TO, data.getContacts());
-        // Set Subject: header field
+        message.setFrom(fromAddress);
+        message.setRecipients(Message.RecipientType.TO, contacts);
         message.setSubject(subjectLine);
-        // Now set the actual message body
-        message.setText(msgHead + msgBody + msgFoot);
-        // Send message
+        message.setText(greeting + NEWLINE + msgBody + NEWLINE + signature);
+
         Transport.send(message);
     }
 

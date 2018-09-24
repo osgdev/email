@@ -68,7 +68,7 @@ class DevNotifyEmailData {
 	
 	/**
 	 * Gets the email addresses for Dev Team members.
-	 * @return the contacts
+	 * @return the Dev Team contacts
 	 */
 	public Address[] getContacts() {
         return contacts;
