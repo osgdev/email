@@ -1,17 +1,20 @@
 package uk.gov.dvla.osg.email;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Date;
 import java.util.Properties;
 
 import javax.mail.*;
-import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import javax.xml.bind.JAXBException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class DevNotifyEmail {
 
@@ -19,28 +22,20 @@ public class DevNotifyEmail {
     private static final String NEWLINE = "\n\n";
     
     private final String subjectLine, msgText, from;
-    private final String smtpHost, smtpPort, username, password;
-    private final Address[] contacts;
-    private InternetAddress fromAddress;
-
+    EmailConfig data;
+    
     /**
      * Instantiates a new dev notify email.
      *
      * @param builder the builder
-     * @throws JAXBException the JAXB exception
+     * @throws IOException 
      */
-    private DevNotifyEmail(Builder builder) throws JAXBException {
+    private DevNotifyEmail(Builder builder) throws IOException {
         this.subjectLine = StringUtils.defaultString(builder.nestedSubjectLine);
         this.msgText = StringUtils.defaultString(builder.nestedMsgText);
         this.from = StringUtils.defaultString(builder.nestedFrom);
-        
-        DevNotifyEmailData data = DevNotifyEmailDataFactory.newInstance();
-        this.smtpHost = data.getHost();
-        this.smtpPort = data.getPort();
-        this.username = data.getUsername();
-        this.password = data.getPassword();
-        this.contacts = data.getContacts();
-        this.fromAddress = data.getFrom();
+        this.data = new ObjectMapper(new YAMLFactory()).readValue(builder.emailConfig, EmailConfig.class);
+
     }
 
     /**
@@ -56,12 +51,12 @@ public class DevNotifyEmail {
         // Email salutation and signature lines
         String greeting = "Hello,";
         String msgBody = DateFormatUtils.format(new Date(), "dd/MM/yyyy HH:mm") + " - " + msgText;
-        String signature = "Please investigate ASAP" + NEWLINE +"Thanks," + NEWLINE + from;
+        String signature = "Please investigate ASAP" + NEWLINE + "Thanks,\n" + from;
 
         // Setup mail server
         Properties properties = new Properties();
-        properties.put("mail.smtp.host", smtpHost);
-        properties.put("mail.smtp.port", smtpPort);
+        properties.put("mail.smtp.host", data.getHost());
+        properties.put("mail.smtp.port", data.getPort());
         properties.put("mail.smtp.auth", "false");
         properties.put("mail.smtp.starttls.ename", "false");
 
@@ -69,13 +64,13 @@ public class DevNotifyEmail {
         Session emailSession = Session.getInstance(properties, new Authenticator() {
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication(username, password);
+                return new PasswordAuthentication(data.getUsername(), data.getPassword());
             }
         });
 
         MimeMessage message = new MimeMessage(emailSession);
-        message.setFrom(fromAddress);
-        message.setRecipients(Message.RecipientType.TO, contacts);
+        message.setFrom(data.getFrom());
+        message.setRecipients(Message.RecipientType.TO, data.getContacts());
         message.setSubject(subjectLine);
         message.setText(greeting + NEWLINE + msgBody + NEWLINE + signature);
 
@@ -98,6 +93,7 @@ public class DevNotifyEmail {
         private String nestedSubjectLine;
         private String nestedMsgText;
         private String nestedFrom;
+        private File emailConfig;
 
         private Builder() {
         }
@@ -136,6 +132,11 @@ public class DevNotifyEmail {
             return this;
         }
 
+        public Builder emailConfig(File configFile) {
+            this.emailConfig = configFile;
+            return this;
+        }
+        
         /**
          * Sends the email with the specified options.
          */
@@ -143,8 +144,8 @@ public class DevNotifyEmail {
             try {
                 DevNotifyEmail devNotifyEmail = new DevNotifyEmail(this);
                 devNotifyEmail.send();
-            } catch (JAXBException ex) {
-                LOG.error("Unable to load email credentials file [{}]", DevNotifyEmailDataFactory.credentialsFile);
+            } catch (IOException ex) {
+                LOG.error("Unable to load email credentials file [{}] : {}", emailConfig.getAbsolutePath(), ex.getMessage());
             } catch (MessagingException mex) {
                 LOG.error("Unable to send email: {}", mex.getMessage());
             }
