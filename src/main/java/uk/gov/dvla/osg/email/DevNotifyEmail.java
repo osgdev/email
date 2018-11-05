@@ -30,7 +30,7 @@ public class DevNotifyEmail {
      * @param builder the builder
      * @throws IOException 
      */
-    private DevNotifyEmail(Builder builder) throws IOException {
+    private DevNotifyEmail(EmailBuilder builder) throws IOException {
         this.subjectLine = StringUtils.defaultString(builder.nestedSubjectLine);
         this.msgText = StringUtils.defaultString(builder.nestedMsgText);
         this.from = StringUtils.defaultString(builder.nestedFrom);
@@ -82,20 +82,21 @@ public class DevNotifyEmail {
      * 
      * @return created builder
      */
-    public static Builder builder() {
-        return new Builder();
+    public static EmailBuilder builder(File configFile) {
+        return new EmailBuilder(configFile);
     }
 
     /**
      * Builder to build {@link DevNotifyEmail}.
      */
-    public static final class Builder {
+    public static class EmailBuilder {
         private String nestedSubjectLine;
         private String nestedMsgText;
         private String nestedFrom;
         private File emailConfig;
 
-        private Builder() {
+        private EmailBuilder(File configFile) {
+            this.emailConfig = configFile;
         }
 
         /**
@@ -104,7 +105,7 @@ public class DevNotifyEmail {
          * @param subjectLine the subject line
          * @return the builder
          */
-        public Builder subjectLine(String subjectLine) {
+        public EmailBuilder subjectLine(String subjectLine) {
             this.nestedSubjectLine = subjectLine;
             return this;
         }
@@ -116,7 +117,7 @@ public class DevNotifyEmail {
          * @param msgText the msg text
          * @return the builder
          */
-        public Builder msgText(String msgText) {
+        public EmailBuilder msgText(String msgText) {
             this.nestedMsgText = msgText;
             return this;
         }
@@ -127,13 +128,8 @@ public class DevNotifyEmail {
          * @param from the from line
          * @return the builder
          */
-        public Builder from(String from) {
+        public EmailBuilder from(String from) {
             this.nestedFrom = from;
-            return this;
-        }
-
-        public Builder emailConfig(File configFile) {
-            this.emailConfig = configFile;
             return this;
         }
         
