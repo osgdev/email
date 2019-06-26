@@ -23,7 +23,7 @@ public class EmailMessage {
     public static final class Builder {
         private Session session;
         private InternetAddress from;
-        private Address[] contacts;
+        private Address[] _contacts;
         private String subjectLine;
         private String messageBody;
 
@@ -47,7 +47,7 @@ public class EmailMessage {
         * @return builder
         */
         public Builder recipients(Address[] contacts) {
-            this.contacts = contacts;
+            this._contacts = contacts;
             return this;
         }
 
@@ -79,7 +79,7 @@ public class EmailMessage {
         public MimeMessage build() throws MessagingException {
             MimeMessage message = new MimeMessage(session);
             message.setFrom(from);
-            message.setRecipients(Message.RecipientType.TO, contacts);
+            message.setRecipients(Message.RecipientType.TO, _contacts);
             message.setSubject(subjectLine);
             message.setText(messageBody);
             return message;

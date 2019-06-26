@@ -17,9 +17,9 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class DevNotifyEmail {
 
-    private String subjectLine;
-    private String msgText;
-    private String from;
+    private String _subjectLine;
+    private String _msgText;
+    private String _from;
     private File emailConfig;
     private EmailConfig data;
 
@@ -27,8 +27,9 @@ public class DevNotifyEmail {
      * Creates builder to build {@link DevNotifyEmail}.
      * 
      * @return created builder
+     * @throws DevEmailException 
      */
-    public static DevNotifyEmail builder(File configFile) {
+    public static DevNotifyEmail builder(File configFile) throws DevEmailException {
         return new DevNotifyEmail(configFile);
     }
 
@@ -36,13 +37,13 @@ public class DevNotifyEmail {
      * Instantiates a new dev notify email.
      *
      * @param builder the builder
-     * @throws IOException
+     * @throws DevEmailException 
      */
-    private DevNotifyEmail(File configFile) {
+    private DevNotifyEmail(File configFile) throws DevEmailException {
         try {
             this.data = new ObjectMapper(new YAMLFactory()).readValue(configFile, EmailConfig.class);
         } catch (IOException ex) {
-            throw new RuntimeException(String.format("Unable to load email config file [%s] : %s", emailConfig.getAbsolutePath(), ex.getMessage()));
+            throw new DevEmailException(String.format("Unable to load email config file [%s] : %s", emailConfig.getAbsolutePath(), ex.getMessage()));
         }
     }
 
@@ -53,7 +54,7 @@ public class DevNotifyEmail {
      * @return the builder
      */
     public DevNotifyEmail subjectLine(String subjectLine) {
-        this.subjectLine = subjectLine;
+        this._subjectLine = subjectLine;
         return this;
     }
 
@@ -65,7 +66,7 @@ public class DevNotifyEmail {
      * @return the builder
      */
     public DevNotifyEmail msgText(String msgText) {
-        this.msgText = msgText;
+        this._msgText = msgText;
         return this;
     }
 
@@ -76,19 +77,19 @@ public class DevNotifyEmail {
      * @return the builder
      */
     public DevNotifyEmail from(String from) {
-        this.from = from;
+        this._from = from;
         return this;
     }
 
     /**
      * Sends the email with the specified options.
      */
-    public void send() throws RuntimeException {
+    public void send() throws DevEmailException {
         try {
             // Salutation, Body and Signature lines
             String greeting = "Hello,";
-            String msgBody = DateUtils.timeStamp("dd/MM/yyyy HH:mm") + " - " + msgText;
-            String signature = "Please investigate ASAP\n\nThanks,\n" + from;
+            String msgBody = DateUtils.timeStamp("dd/MM/yyyy HH:mm") + " - " + _msgText;
+            String signature = "Please investigate ASAP\n\nThanks,\n" + _from;
             String bodyContent = StringUtils.join(Arrays.asList(greeting, msgBody, signature), "\n\n");
 
             // Setup mail server
@@ -105,12 +106,12 @@ public class DevNotifyEmail {
             Session emailSession = Session.getInstance(properties, authenticator);
 
             // Construct the email
-            MimeMessage message = EmailMessage.builder(emailSession).from(data.getFrom()).recipients(data.getContacts()).subjectLine(subjectLine).message(bodyContent).build();
+            MimeMessage message = EmailMessage.builder(emailSession).from(data.getFrom()).recipients(data.getContacts()).subjectLine(_subjectLine).message(bodyContent).build();
 
             // Send the email
             Transport.send(message);
         } catch (MessagingException ex) {
-            throw new RuntimeException(String.format("Unable to send email: %s", ex.getMessage()));
+            throw new DevEmailException(String.format("Unable to send email: %s", ex.getMessage()));
         }
     }
 }
