@@ -20,7 +20,6 @@ public class DevNotifyEmail {
     private String _subjectLine;
     private String _msgText;
     private String _from;
-    private File emailConfig;
     private EmailConfig data;
 
     /**
@@ -43,7 +42,7 @@ public class DevNotifyEmail {
         try {
             this.data = new ObjectMapper(new YAMLFactory()).readValue(configFile, EmailConfig.class);
         } catch (IOException ex) {
-            throw new DevEmailException(String.format("Unable to load email config file [%s] : %s", emailConfig.getAbsolutePath(), ex.getMessage()));
+            throw new DevEmailException(String.format("Unable to load email config file [%s] : %s", configFile.getAbsolutePath(), ex.getMessage()));
         }
     }
 
@@ -106,7 +105,12 @@ public class DevNotifyEmail {
             Session emailSession = Session.getInstance(properties, authenticator);
 
             // Construct the email
-            MimeMessage message = EmailMessage.builder(emailSession).from(data.getFrom()).recipients(data.getContacts()).subjectLine(_subjectLine).message(bodyContent).build();
+            MimeMessage message = EmailMessage.builder(emailSession)
+                                              .from(data.getFrom())
+                                              .recipients(data.getContacts())
+                                              .subjectLine(_subjectLine)
+                                              .message(bodyContent)
+                                              .build();
 
             // Send the email
             Transport.send(message);

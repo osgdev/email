@@ -35,10 +35,10 @@ public class DateUtils {
         // Format date string is currently in
         DateFormat fromFormat = new SimpleDateFormat(currentFormat);
         // Convert date string to Date object
-        Date parse = fromFormat.parse(date);
+        Date parsedDate = fromFormat.parse(date);
         // Format to convert date to
         DateFormat toFormat = new SimpleDateFormat(newFormat);
         // Convert the Date object back to a string in the new format
-        return toFormat.format(parse);
+        return toFormat.format(parsedDate);
     }
 }
