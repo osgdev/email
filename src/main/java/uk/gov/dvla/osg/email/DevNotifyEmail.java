@@ -2,15 +2,15 @@ package uk.gov.dvla.osg.email;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Properties;
 
+import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.MimeMessage;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.TextStringBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -85,11 +85,17 @@ public class DevNotifyEmail {
      */
     public void send() throws DevEmailException {
         try {
+
             // Salutation, Body and Signature lines
-            String greeting = "Hello,";
-            String msgBody = DateUtils.timeStamp("dd/MM/yyyy HH:mm") + " - " + _msgText;
-            String signature = "Please investigate ASAP\n\nThanks,\n" + _from;
-            String bodyContent = StringUtils.join(Arrays.asList(greeting, msgBody, signature), "\n\n");
+            String bodyContent = new TextStringBuilder()
+                                            .appendln("Hello,")
+                                            .appendln("")
+                                            .appendln(DateUtils.timeStamp("dd/MM/yyyy HH:mm") + " - " + _msgText)
+                                            .appendln("Please investigate.")
+                                            .appendln("")
+                                            .appendln("Thanks,")
+                                            .appendln(_from)
+                                            .toString();
 
             // Setup mail server
             Properties properties = new Properties();
@@ -105,17 +111,16 @@ public class DevNotifyEmail {
             Session emailSession = Session.getInstance(properties, authenticator);
 
             // Construct the email
-            MimeMessage message = EmailMessage.builder(emailSession)
-                                              .from(data.getFrom())
-                                              .recipients(data.getContacts())
-                                              .subjectLine(_subjectLine)
-                                              .message(bodyContent)
-                                              .build();
-
+            MimeMessage message = new MimeMessage(emailSession);
+            message.setFrom(data.getFrom());
+            message.setRecipients(RecipientType.TO, data.getContacts());
+            message.setSubject(_subjectLine);
+            message.setText(bodyContent);
+            
             // Send the email
             Transport.send(message);
         } catch (MessagingException ex) {
-            throw new DevEmailException(String.format("Unable to send email: %s", ex.getMessage()));
+            throw new DevEmailException("Unable to send email: " + ex.getMessage());
         }
     }
 }
