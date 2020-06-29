@@ -28,7 +28,7 @@ public class DevNotifyEmail {
      * @return created builder
      * @throws DevEmailException 
      */
-    public static DevNotifyEmail builder(File configFile) throws DevEmailException {
+    public static DevNotifyEmail build(File configFile) throws DevEmailException {
         return new DevNotifyEmail(configFile);
     }
 
